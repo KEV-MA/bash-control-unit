@@ -1,0 +1,61 @@
+#!/bin/bash
+
+source unit-functions
+
+print_items() {
+    x=4
+    menu 3 4 "Index"
+    menu 3 10 "Tasks"
+    menu 3 25 "Due Date"
+    menu 3 40 "Priority"
+
+    for i in ${!tasks_ordered[@]}
+    do
+        if [[ ${tasks_ordered[$i]} != "" ]]
+        then
+            menu $x 4 $i
+            menu $x 10 ${tasks_ordered[$i]:4}
+            menu $x 25 $((${tasks_ordered[$i]:2:2}-10))
+            menu $x 40 $((${tasks_ordered[$i]:0:2}-10))
+            x=$((x+1))
+        fi
+    done
+}
+
+if [[ $(cat ${file_tasks[1]}) != "" ]]
+then
+    read_items ${file_tasks[1]}
+fi
+
+while [ : ]
+do
+    printf "\033c"
+    if [[ $(cat ${file_tasks[0]}) != "" ]]
+    then
+        if [[ $(cat ${file_tasks[1]}) != "" ]]
+        then
+            # add already sorted tasks to tasks array to be sorted again
+            tasks_ordered=()
+            read_items ${file_tasks[1]}
+            tasks=(${tasks_ordered[@]})
+            echo "" > ${file_tasks[1]} # clear sorted tasks file to avoid duplicates
+        fi
+
+        get_scores ${file_tasks[0]} # calcaulte the task scores
+        tasks_ordered=($(merge_sort "${tasks[@]}")) # sort the tasks into tasks_ordered array
+
+        save_sorted ${file_tasks[1]} ${file_tasks[0]} # save new sorted array into sorted tasks file
+        print_items # print all tasks in sorted tasks file
+    else
+        print_items
+    fi
+
+    tput cup 20 4; read -p "$" input
+    params=$(read_params "$input")
+    case $input in
+        cp*) complete_item $params ${file_tasks[1]};;
+        rs) echo "" >> /dev/null;;
+        "back") exit 0;;
+        *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+    esac
+done

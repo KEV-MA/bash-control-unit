@@ -1,0 +1,106 @@
+#!/bin/bash
+
+source unit-functions
+
+files=("./MGMT/SCHS/", "./MGMT/PLNS/", "./MGMT/RCDS/", "./MGMT/RPTS/")
+
+schedule=()
+
+print_file() {
+    less $1
+}
+
+edit_file() {
+    nano $1
+}
+
+read_schedule() {
+    # schedule format:
+    # task, days, start, end, location, notes
+
+    # formated schedule format:
+    # start, end, task, days, location, notes
+
+    while IFS= read -r line
+    do
+        IFS=', ' read -r -a params <<< $line
+        schedule+=("$((${params[2]}+1000))$((${params[3]}+1000))${params[0]},${params[1]},${params[4]},${params[5]}")
+    done < "./schedule.txt"
+}
+
+get_schedule() {
+    menu 5 4 "User Schedule"
+    menu 6 4 "Mon"
+    menu 6 24 "Tues"
+    menu 6 44 "Wed"
+    menu 6 64 "Thur"
+    menu 6 84 "Fri"
+    menu 6 104 "Sat"
+    menu 6 124 "Sun"
+
+    read_schedule
+    schedule=($(merge_sort schedule 0 4))
+
+    x=7
+    index=()
+    for i in ${!schedule[@]}
+    do
+        for (( j=0; j<${#${schedule[$i]}}; j++ ))
+        do
+            if ${schedule[$i]:$j:1} == ","
+            then
+                index[$i]="${index[$i]}$j"
+            fi
+        done
+        for (( k=0; k<${#${schedule[$i]:${index[$i]:1:1}:$((${index[$i]:1:1}-${index[$i]:2:1}))}}))
+        do
+            y=$(($k*20))
+            menu $x $(($y+4)) $i
+            menu $x $(($y+6)) "$((${schedule[$i]:0:4}-1000))-$((${schedule[$i]:4:4}-1000))"
+            menu $x $(($y+12)) "${schedule[$i]:8:$((${index[$i]:1:1}-${index[$i]:0:1}))}"
+        x=$((x+1))
+    echo ${index[@]}
+}
+
+info() {
+    index=("$@")
+    menu 20 4 "Location: ${schedule[$1]:${index[$1]:1:1}:$((${index[$1]:2:1}-${index[$1]:1:1}))}"
+    menu 21 4 "Notes:"
+    menu 22 4 "${schedule[$1]:${index[$1]:2:1}:}"
+}
+
+while [ : ]
+do
+    printf "\033c"
+    printf "\033[8;30;150t"
+    menu 2 4 "Login: $(date)"
+    menu 3 4 "User: $(whoami)"
+    #today's weather
+    get_schedule
+    tput cup 20 4; read -p "$" input
+
+    params=$(read_params "$input")
+    case $input in
+        print*)
+            case $params in
+                SH*) get_schedule "${files[0]}$params";;
+                PL*) print_file "${files[1]}$params";;
+                RD*) print_file "${files[2]}$params";;
+                RP*) print_file "${files[3]}$params";;
+                readme) print-readme;;
+                *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+            esac;;
+        edit*)
+            case $params in
+                SH*) edit_file "${files[0]}$params";;
+                PL*) edit_file "${files[1]}$params";;
+                RD*) edit_file "${files[2]}$params";;
+                RP*) edit_file "${files[3]}$params";;
+                readme) edit_readme;;
+                *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+            esac;;
+        info*) info $params;;
+        "back") exit 0;;
+        *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+    esac
+done

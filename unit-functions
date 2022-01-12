@@ -1,0 +1,64 @@
+#!/bin/bash
+
+bold=$(tput bold)
+normal=$(tput sgr0)
+
+menu() {
+    local x=$1
+    local y=$2
+    local text="$3"
+    tput cup $x $y
+    echo -ne "$text\r"
+}
+
+read_params() {
+    local input=$1
+    IFS=' ' read -r -a params <<< "$input"
+    echo ${params[1]}
+}
+
+# perform merge sort on tasks array and store result into tmp_score
+merge_sort() {
+    tmp_score=("$@")
+    if [[ ${#tmp_score[@]} -gt 1 ]]
+    then
+        mid=$((${#tmp_score[@]}/2))
+
+        left=($(merge_sort "${tmp_score[@]:0:$mid}"))
+        right=($(merge_sort "${tmp_score[@]:$mid}"))
+
+        i=0
+        j=0
+        k=0
+
+        while [[ $i -lt ${#left[@]} && $j -lt ${#right[@]} ]]
+        do
+        #double brakcets remove
+            if [[ ${left[$i]:$2:$3} -gt ${right[$j]:$2:$3} ]]
+            then
+                tmp_score[$k]=${left[$i]}
+                i=$((i+1))
+            else
+                tmp_score[$k]=${right[$j]}
+                j=$((j+1))
+            fi
+            k=$((k+1))
+        done
+
+        while [[ $i -lt ${#left[@]} ]]
+        do
+            tmp_score[$k]=${left[$i]}
+            i=$((i+1))
+            k=$((k+1))
+        done
+
+        while [[ $j -lt ${#right[@]} ]]
+        do
+            tmp_score[$k]=${right[$j]}
+            j=$((j+1))
+            k=$((k+1))
+        done
+    fi
+    echo ${tmp_score[@]}
+}
+

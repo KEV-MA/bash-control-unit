@@ -1,0 +1,46 @@
+#!/bin/bash
+
+source unit-functions
+
+man_menu() {
+    menu 0 0 "${bold}Menu(1)${normal}"
+    menu 1 0 "${bold}NAME${normal}"
+    menu 2 4 "menu -- display overview menu or records from command results"
+    menu 4 0 "${bold}SYNOPSIS${normal}"
+    menu 5 4 "menu [cmd]"
+    menu 7 0 "${bold}DESCRIPTION${normal}"
+    menu 8 4 "The ${bold}menu${normal} by default, prints out a graphical menu that shows a summary
+    of tasks and a general information about the date, weather, etc.
+    
+    If the user wants to see a more specialized menu related to a certain command,
+    they can specify [cmd]. ${bold}menu${normal} will then read from the records folder to print
+    out the necessary information on screen."
+    menu 15 4 "The available commands for menus are as follows:"
+    menu 17 4 "${bold}dump${normal}"
+    menu 17 16 "shows statistics about finance, stocks, activity records."
+    menu 18 4 "${bold}task${normal}"
+    menu 18 16 "shows list of scheduled tasks for the day, and completed tasks."
+    menu 19 4 "${bold}proj${normal}"
+    menu 19 16 "shows list of concurrent projects and completed projects."
+    menu 21 4 "Use ${bold}back${normal} to return to the main menu."
+}
+
+while [ : ]
+do
+    printf "\033c"
+    case $1 in
+        menu) man_menu;;
+        dump) man_dump;;
+        task) man_task;;
+        proj) man_proj;;
+    esac
+
+    tput cup 23 0; read -p ":" input
+    case $input in
+        "back") exit 0;;
+        *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+    esac
+done
+        
+        
+

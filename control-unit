@@ -1,0 +1,49 @@
+#!/bin/bash
+
+source unit-functions
+
+while [ : ]
+do
+    printf "\033c"
+    menu 2 4 "Bash Control Unit 1.0"
+    menu 3 4 "The Bash Control unit is a smart management tool for"
+    menu 4 4 "maintaining weekly schedules, projects, and tasks."
+    menu 6 4 "List of Functions:"
+
+    menu 10 4 "menu [page]"
+    menu 10 30 "Show menu"
+    menu 11 4 "dump [topic] [year]"
+    menu 11 30 "Create report on data for [topic] in [year]"
+    menu 12 4 "task"
+    menu 12 30 "Open task manager to see task list"
+    menu 13 4 "proj"
+    menu 14 30 "Open project manager to see project list"
+    menu 15 4 "help [cmd]"
+    menu 15 30 "Print help page for [cmd]"
+    menu 16 4 "quit"
+    menu 16 30 "Quits Control Unit"
+    tput cup 20 4; read -p "$" input
+
+    params=$(read_params "$input");
+    case $input in
+        "menu") ./menu
+        dump*)
+            case $params in
+                fin|stk|act|rs) ./dump $params;;
+                *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+            esac;;
+        # Stock Analysis
+        # list of stocks, quanities, total commission, transaction effects
+        # deposition totals, profit analytics
+        "task") ./tasks;;
+        "proj") ./proj;;
+        help*)
+            case $params in
+                menu|dump|task|proj) ./man $params;;
+                *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+            esac;;
+        "quit") exit 0;;
+        *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+    esac
+done
+

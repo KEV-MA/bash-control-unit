@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# tasks file format:
+# task, duration, priority, due
+
+source unit-functions
+
+tasks=()
+tasks_ordered=()
+file_tasks=("./MGMT/TASKS/general-tasks.csv" "./MGMT/TASKS/sorted-general-tasks.csv")
+
+m=5
+a=1
+cp=4
+cd=2
+
+# read and calculate the scores for the tasks in file and add to tasks array
+get_scores() {
+    while IFS= read -r line
+    do
+        IFS=', ' read -r -a params <<< $line;
+
+        let d=3**$((${params[3]}-$a))
+        scores=$(($m/(1+$d)+$cp*${params[2]}+$cd*${params[1]}))
+        string="$(($scores+10))$((${params[3]}+10))${params[0]}"
+
+        tasks+=($string)
+
+    done < $1
+}
+
+# save items in tasks_ordered array into file
+save_sorted() {
+    for i in ${tasks_ordered[@]}
+    do
+        echo $i >> $1
+    done
+    rm $2
+    echo "" > $2
+}
+
+# save tasks in file into tasks_ordered array
+read_items() {
+    while IFS= read -r line
+    do
+        IFS=', ' read -r -a params <<< $line
+        tasks_ordered+=($line) # append each line to tasks_ordered array
+    done < $1
+}
+
+# parses and prints items in tasks_ordered array
+print_items() {
+    x=4
+    menu 3 4 "Index"
+    menu 3 10 "Tasks"
+    menu 3 25 "Due Date"
+    menu 3 40 "Priority"
+
+    for i in ${!tasks_ordered[@]}
+    do
+        if [[ ${tasks_ordered[$i]} != "" ]]
+        then
+            menu $x 4 $i
+            menu $x 10 ${tasks_ordered[$i]:4}
+            menu $x 25 $((${tasks_ordered[$i]:2:2}-10))
+            menu $x 40 $((${tasks_ordered[$i]:0:2}-10))
+            x=$((x+1))
+        fi
+    done
+}
+
+# set a task as complete by removing it from the file
+complete_item() {
+    tasks_ordered[$1]=""
+    echo "" > $2
+    save_sorted $2
+}
+
+# check if there sorted tasks file is not empty
+# and save its contents into tasks_ordered array if so
+if [[ $(cat ${file_tasks[1]}) != "" ]]
+then
+    read_items ${file_tasks[1]}
+fi
+
+while [ : ]
+do
+    printf "\033c"
+    if [[ $(cat ${file_tasks[0]}) != "" ]]
+    then
+        if [[ $(cat ${file_tasks[1]}) != "" ]]
+        then
+            # add already sorted tasks to tasks array to be sorted again
+            tasks_ordered=()
+            read_items ${file_tasks[1]}
+            tasks=(${tasks_ordered[@]})
+            echo "" > ${file_tasks[1]} # clear sorted tasks file to avoid duplicates
+        fi
+
+        get_scores ${file_tasks[0]} # calcaulte the task scores
+        tasks_ordered=($(merge_sort "${tasks[@]}" 0 2)) # sort the tasks into tasks_ordered array
+
+        save_sorted ${file_tasks[1]} ${file_tasks[0]} # save new sorted array into sorted tasks file
+        print_items # print all tasks in sorted tasks file
+    else
+        print_items
+    fi
+
+    tput cup 20 4; read -p "$" input
+    params=$(read_params "$input")
+    case $input in
+        cp*) complete_item $params ${file_tasks[1]};;
+        rs) echo "" >> /dev/null;;
+        "back") exit 0;;
+        *) menu 21 4 "ERROR: Please Enter a Valid Command."; sleep 1;;
+    esac
+done
